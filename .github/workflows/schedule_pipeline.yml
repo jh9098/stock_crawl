@@ -1,42 +1,41 @@
+# .github/workflows/schedule_pipeline.yml
+
 name: Run Daily News Pipeline
 
 on:
-  workflow_dispatch: # 수동 실행 가능
+  # 1. 수동으로 실행할 수 있도록 설정
+  workflow_dispatch:
+  
+  # 2. 스케줄에 따라 자동 실행 설정
   schedule:
-    - cron: '0 22 * * *' # 매일 22:00 UTC (한국시간 오전 7시)에 실행
+    # 매일 22:00 UTC (한국 시간 오전 7시)에 실행
+    - cron: '0 22 * * *'
 
 jobs:
-  build-and-run:
+  run-pipeline:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
       - name: Install dependencies
         run: |
-          cd backend
-          pip install -r requirements.txt
-      
+          python -m pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 lxml google-generativeai
+
       - name: Run Python Pipeline
         env:
-          GOOGLE_API_KEY_1: ${{ secrets.GOOGLE_API_KEY_1 }}
+          # GitHub Secrets에 저장된 값들을 환경 변수로 주입
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+          JSONBIN_API_KEY: ${{ secrets.JSONBIN_API_KEY }}
+          JSONBIN_BIN_ID: ${{ secrets.JSONBIN_BIN_ID }}
         run: |
-          cd backend
-          python run_pipeline.py
-
-      # 여기에 결과물(CSV)을 클라우드 스토리지에 업로드하는 단계 추가
-      # 예시: AWS S3에 업로드
-      # - name: Upload to S3
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: ap-northeast-2
-      # - run: aws s3 cp backend/output/aggregated/aggregated_stock_data.csv s3://your-bucket-name/
+          python backend/run_pipeline.py
