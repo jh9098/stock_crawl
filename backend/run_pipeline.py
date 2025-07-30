@@ -215,19 +215,41 @@ def analyze_articles_with_ai(articles):
     return final_list
 
 def get_existing_data_from_bin():
-    """JSONBin에서 기존 데이터를 가져옵니다."""
-    print(" - 원격 저장소(JSONBin.io)에서 기존 데이터 다운로드 중...")
+    """JSONBin에서 기존 데이터를 가져옵니다. 항상 리스트를 반환하도록 보장합니다."""
+    print("  - 원격 저장소(JSONBin.io)에서 기존 데이터 다운로드 중...")
     headers = {'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Versioning': 'false'}
     url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
     try:
         req = requests.get(url, headers=headers, timeout=15)
         req.raise_for_status()
-        print(" - 기존 데이터 다운로드 성공.")
-        return req.json()
-    except Exception as e:
-        print(f" - ⚠️ 기존 데이터 다운로드 실패 (아마도 첫 실행): {e}")
-        return []
+        response_data = req.json()
 
+        # [핵심 수정] JSONBin.io 응답 구조에 맞춰 안정적으로 데이터 추출
+        # 최상위가 딕셔너리이고 'record' 키가 있으면 그 안의 리스트를 사용
+        if isinstance(response_data, dict) and 'record' in response_data:
+            result = response_data['record']
+        # 최상위가 리스트이면 그대로 사용
+        elif isinstance(response_data, list):
+            result = response_data
+        # 그 외의 경우 비정상으로 간주
+        else:
+            print("  - ⚠️ 원격 데이터가 예상치 못한 형식입니다. 빈 리스트로 처리합니다.")
+            result = []
+
+        # 최종 결과가 리스트인지 한번 더 확인
+        if not isinstance(result, list):
+             print(f"  - ⚠️ 최종 추출 결과가 리스트가 아닙니다 (타입: {type(result)}). 빈 리스트로 처리합니다.")
+             return []
+
+        print(f"  - 기존 데이터 다운로드 성공. ({len(result)}개)")
+        return result
+        
+    except json.JSONDecodeError:
+        print("  - ⚠️ 원격 데이터가 비어 있거나 JSON 형식이 아닙니다. 빈 리스트로 처리합니다.")
+        return []
+    except Exception as e:
+        print(f"  - ⚠️ 기존 데이터 다운로드 실패 (아마도 첫 실행): {e}")
+        return []
 def upload_data_to_bin(data):
     """JSONBin에 최종 데이터를 업로드(덮어쓰기)합니다."""
     print(" - 원격 저장소(JSONBin.io)에 최종 데이터 업로드 중...")
