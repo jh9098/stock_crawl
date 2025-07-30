@@ -214,102 +214,64 @@ def analyze_articles_with_ai(articles):
     print("--- ✅ AI 분석 완료 ---")
     return final_list
 
-def get_existing_data_from_bin():
-    """JSONBin에서 기존 데이터를 가져옵니다. 항상 리스트를 반환하도록 보장합니다."""
-    print("  - 원격 저장소(JSONBin.io)에서 기존 데이터 다운로드 중...")
-    headers = {'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Versioning': 'false'}
-    url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}/latest"
-    try:
-        req = requests.get(url, headers=headers, timeout=15)
-        req.raise_for_status()
-        response_data = req.json()
-
-        # [핵심 수정] JSONBin.io 응답 구조에 맞춰 안정적으로 데이터 추출
-        # 최상위가 딕셔너리이고 'record' 키가 있으면 그 안의 리스트를 사용
-        if isinstance(response_data, dict) and 'record' in response_data:
-            result = response_data['record']
-        # 최상위가 리스트이면 그대로 사용
-        elif isinstance(response_data, list):
-            result = response_data
-        # 그 외의 경우 비정상으로 간주
-        else:
-            print("  - ⚠️ 원격 데이터가 예상치 못한 형식입니다. 빈 리스트로 처리합니다.")
-            result = []
-
-        # 최종 결과가 리스트인지 한번 더 확인
-        if not isinstance(result, list):
-             print(f"  - ⚠️ 최종 추출 결과가 리스트가 아닙니다 (타입: {type(result)}). 빈 리스트로 처리합니다.")
-             return []
-
-        print(f"  - 기존 데이터 다운로드 성공. ({len(result)}개)")
-        return result
-        
-    except json.JSONDecodeError:
-        print("  - ⚠️ 원격 데이터가 비어 있거나 JSON 형식이 아닙니다. 빈 리스트로 처리합니다.")
-        return []
-    except Exception as e:
-        print(f"  - ⚠️ 기존 데이터 다운로드 실패 (아마도 첫 실행): {e}")
-        return []
-def upload_data_to_bin(data):
-    """JSONBin에 최종 데이터를 업로드(덮어쓰기)합니다."""
-    print(" - 원격 저장소(JSONBin.io)에 최종 데이터 업로드 중...")
-    headers = {'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY}
-    url = f"https://api.jsonbin.io/v3/b/{JSONBIN_BIN_ID}"
-    try:
-        req = requests.put(url, json=data, headers=headers, timeout=15)
-        req.raise_for_status()
-        print(f" - ✅ 최종 데이터 업로드 성공! (총 {len(data)}개)")
-    except Exception as e:
-        print(f" - 🚨 최종 데이터 업로드 실패: {e}")
-
-def aggregate_data(new_articles):
-    """새로운 기사와 기존 기사를 병합하고 중복을 제거합니다."""
-    print("\n--- 4단계: 데이터 병합 및 업로드 시작 ---")
+# ==============================================================================
+# 💾 4단계: 데이터 취합 및 CSV 저장 함수 (JSONBin 대신 파일로 저장)
+# ==============================================================================
+def aggregate_and_save_to_csv(new_articles, output_dir):
+    """새로운 기사를 로컬 CSV 파일에 누적하여 저장합니다."""
+    print("\n--- 4단계: 데이터 병합 및 CSV 저장 시작 ---")
     if not new_articles:
-        print(" - 취합할 새 데이터가 없습니다.")
+        print("  - 취합할 새 데이터가 없습니다.")
         return
-    # 1. 원격 저장소에서 기존 데이터 가져오기
-    existing_articles = get_existing_data_from_bin()
 
-    # 2. DataFrame으로 변환하여 병합 및 중복 제거
-    df_new = pd.DataFrame(new_articles)
-    df_existing = pd.DataFrame(existing_articles)
-
-    combined_df = pd.concat([df_existing, df_new], ignore_index=True)
-    combined_df.drop_duplicates(subset=['url'], keep='last', inplace=True)
-
-    # 3. 오래된 데이터 제거 (예: 최근 30일치 데이터만 유지)
+    # 이 스크립트는 항상 최신 3일치 데이터를 가져오므로, 
+    # 기존 데이터를 읽어와 병합하는 대신 매번 새로 만드는 것이 더 간단하고 안정적입니다.
+    # (어차피 대시보드는 최신 데이터만 보여줄 것이므로)
+    
+    # 1. DataFrame으로 변환
+    df = pd.DataFrame(new_articles)
+    
+    # 2. 오래된 데이터 제거 (예: 최근 30일치 데이터만 유지)
     thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    combined_df['published_at'] = pd.to_datetime(combined_df['published_at'], errors='coerce').dt.strftime('%Y-%m-%d')
-    final_df = combined_df[combined_df['published_at'] >= thirty_days_ago]
+    df['published_at'] = pd.to_datetime(df['published_at'], errors='coerce').dt.strftime('%Y-%m-%d')
+    final_df = df[df['published_at'] >= thirty_days_ago].copy()
+    
+    # 3. 리스트 형태의 컬럼을 CSV에 저장하기 좋게 문자열로 변환
+    for col in ['analysis_orgs', 'analysis_keywords']:
+        if col in final_df.columns:
+            final_df[col] = final_df[col].apply(lambda x: str(x) if isinstance(x, list) else str(x))
 
-    print(f"  - 데이터 병합 완료. (기존: {len(df_existing)}, 신규: {len(df_new)}, 중복제거 후: {len(combined_df)}, 최종: {len(final_df)})")
+    # 4. CSV 파일로 저장
+    os.makedirs(output_dir, exist_ok=True)
+    csv_path = os.path.join(output_dir, "aggregated_stock_data.csv")
+    final_df.to_csv(csv_path, index=False, encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
+    print(f"--- ✅ CSV 저장 완료. 총 {len(final_df)}개 기사 저장 ---")
+    print(f"   - 저장 경로: {csv_path}")
 
-    # 4. 다시 JSON 리스트 형태로 변환하여 업로드
-    final_data = final_df.to_dict(orient='records')
-    upload_data_to_bin(final_data)
-
+# ==============================================================================
+#  ▶️ Orchestrator: 메인 실행 함수
+# ==============================================================================
 def main():
     """전체 파이프라인을 순서대로 실행하는 메인 함수입니다."""
     print("="*50)
     print(" K-Stock News Analysis Pipeline (GitHub Actions) - START")
     print("="*50)
+    
     try:
         initialize_gemini_model()
     except Exception as e:
         print(f"❌ 초기화 중 오류 발생: {e}")
-        sys.exit(1) # 초기화 실패 시 실행 중단
+        sys.exit(1)
 
-    # 기존 데이터(URL)는 JSONBin에서 직접 가져와 중복을 체크
-    existing_articles = get_existing_data_from_bin()
-    existing_urls = {article.get('url') for article in existing_articles}
-
-    new_articles = crawl_naver_news(STOCK_SEARCH_KEYWORDS, existing_urls)
-
+    # 이 파이프라인은 매번 새로 데이터를 가져와 덮어쓰므로, 기존 URL 로드가 필요 없습니다.
+    # 단, 네이버 API 중복 방지를 위해 실행 시간 동안에는 URL을 기억합니다.
+    temp_existing_urls = set()
+    new_articles = crawl_naver_news(STOCK_SEARCH_KEYWORDS, temp_existing_urls)
+    
     if not new_articles:
         print("\n✅ 수집된 새로운 뉴스가 없습니다. 파이프라인을 종료합니다.")
         return
-
+        
     print("\n--- 2단계: 기사 본문 추출 시작 ---")
     for i, article in enumerate(new_articles):
         if not article.get('content'):
@@ -319,8 +281,10 @@ def main():
     print("--- ✅ 본문 추출 완료 ---")
 
     analyzed_articles = analyze_articles_with_ai(new_articles)
-
-    aggregate_data(analyzed_articles)
+    
+    # 최종 결과물을 저장할 경로 설정
+    output_dir = os.path.join("output", "aggregated")
+    aggregate_and_save_to_csv(analyzed_articles, output_dir)
 
     print("\n" + "="*50)
     print(" K-Stock News Analysis Pipeline - COMPLETE")
