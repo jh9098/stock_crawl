@@ -350,7 +350,9 @@ def aggregate_and_save_to_csv(new_articles, output_dir):
             final_df[col] = final_df[col].apply(lambda x: str(x) if isinstance(x, list) else str(x))
 
     os.makedirs(output_dir, exist_ok=True)
-    csv_path = os.path.join(output_dir, "aggregated_stock_data.csv")
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    csv_filename = f"aggregated_stock_data_{timestamp}.csv"
+    csv_path = os.path.join(output_dir, csv_filename)
     final_df.to_csv(csv_path, index=False, encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
     print(f"--- ✅ CSV 저장 완료. 총 {len(final_df)}개 기사 저장 ---")
     print(f"   - 저장 경로: {csv_path}")
