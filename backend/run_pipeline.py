@@ -35,17 +35,26 @@ JSONBIN_BIN_ID = os.getenv("JSONBIN_BIN_ID")
 # --- 검색 키워드 목록 ---
 STOCK_SEARCH_KEYWORDS = [
     "코스피", "코스닥", "환율", "금리인상", "FOMC", "외국인 순매수", "반도체",
-    "HBM", "AI반도체", "2차전지", "바이오", "제약", "밸류업", "기업 실적"
+    "HBM", "AI반도체", "2차전지", "바이오", "제약", "밸류업", "기업 실적", "어닝 서프라이즈", "전쟁"
 ]
 
 # --- 기타 설정 ---
 RATE_LIMIT_DELAY = 1
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 ARTICLE_END_MARKERS = [
-    "무단전재", "무단 전재", "재배포 금지", "저작권자", "광고문의", "기자=", "기자 (",
-    "기자]", "[사진=", "(서울=연합뉴스)", "[ⓒ", "AI학습 이용 금지", "Copyright"
+    "무단전재", "무단 전재", "재배포 금지", "저작권자", "광고문의", 
+    "광고 문의", "AD링크", "타불라", "관련기사", "기자소개", "기자 소개",
+    "기자의 다른기사", "편집패널", "본문하단", "nBYLINE", "좋아요 버튼",
+    "속보는", "t.me/", "텔레그램", "영상취재", "기사제보", "보도자료",
+    "팟캐스트", "많이 본 기사", "공유하기", "공유버튼", "nCopyright",
+    "기사 전체보기", "입력 :", "지면 :", "AI학습 이용 금지", "기사 공유",
+    "댓글", "좋아요", "광고", "관련 뉴스", "추천 뉴스", "영상편집",
+    "뉴스제공", "기사제공", "기사 하단 광고", "기사 영역 하단 광고",
+    "기자 정보", "전체기사 보기", "장기영 기자", "공감언론",
+    "기자 (", "기자 =", "기자]", "[사진=", "자료=", "(서울=연합뉴스)",
+    "[파이낸셜뉴스]", "페이스북", "트위터", "카카오톡", "제보하기",
+    "독자 여러분의 소중한 제보를 기다립니다", "▶", "※", "☞", "[ⓒ", "◎"
 ]
-
 # ==============================================================================
 # 🤖 AI 및 프롬프트 함수
 # ==============================================================================
@@ -105,7 +114,7 @@ def crawl_naver_news(keywords, existing_urls):
     print(f"\n--- 1단계: 네이버 뉴스 수집 시작 (대상 날짜: {date_str}) ---")
     for keyword in keywords:
         print(f" 🔎 키워드 '{keyword}' 수집 중...")
-        params = {"query": keyword, "display": 100, "start": 1, "sort": "date"}
+        params = {"query": keyword, "display": 30, "start": 1, "sort": "date"}
         try:
             response = requests.get(api_url, headers=headers, params=params, verify=False, timeout=10)
             response.raise_for_status()
@@ -136,36 +145,142 @@ def crawl_naver_news(keywords, existing_urls):
     print(f"--- ✅ 뉴스 수집 완료. 총 {len(all_new_articles)}개의 새 기사 발견 ---")
     return all_new_articles
 
+# ==============================================================================
+# 📰 2단계: 기사 본문 추출 함수 (최적화 버전 적용)
+# ==============================================================================
+
+def clean_bottom_boilerplate(text):
+    """기사 하단의 반복적인 상용구(기자 정보, 저작권 등)를 정리합니다."""
+    if not isinstance(text, str) or not text: return text
+    # 이메일 및 URL 제거
+    text = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '', text)
+    text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        # END_MARKERS 중 하나가 줄 시작 30자 이내에 나타나면 중단
+        found_marker = any(marker in line.strip()[:30] for marker in ARTICLE_END_MARKERS)
+        if found_marker: break
+        cleaned_lines.append(line)
+    return '\n'.join(cleaned_lines).strip()
+
 def extract_article_content(url):
-    """주어진 URL에서 기사 본문을 추출합니다."""
-    headers = {"User-Agent": "Mozilla/5.0", "Accept-Language": "ko-KR,ko;q=0.9"}
+    """
+    [최신화 버전] API 처리와 범용 파서를 결합한 통합 본문 추출 함수
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+    }
+    
+    # --- 전략 1: 사이트별 API 특별 처리 (Whitelist 방식) ---
+    
+    # 1. SBS Biz (JSON API)
+    if 'biz.sbs.co.kr/article' in url:
+        try:
+            article_id_match = re.search(r'/(\d{11})', url)
+            if not article_id_match: return "[실패] SBS Biz: 기사 ID 없음"
+            article_id = article_id_match.group(1)
+            api_url = f"https://apis.sbs.co.kr/play-api/1.0/sbs_newsmedia/{article_id}"
+            api_response = requests.get(api_url, headers=headers, timeout=10, verify=False)
+            api_response.raise_for_status()
+            data = api_response.json()
+            content_html = data.get('clip', {}).get('info', {}).get('contentdata', '') or \
+                           data.get('clip', {}).get('info', {}).get('synopsis', '')
+            if content_html:
+                soup = BeautifulSoup(content_html, "lxml")
+                return clean_bottom_boilerplate(soup.get_text(separator='\n', strip=True))
+            return "[실패] SBS Biz: API에 내용 없음"
+        except Exception as e:
+            return f"[오류] SBS Biz API: {e}"
+
+    # 2. 스카이데일리 (HTML 조각 로딩 API)
+    if 'skyedaily.com/news/news_view.html' in url:
+        try:
+            article_id_match = re.search(r'ID=(\d+)', url)
+            if not article_id_match: return "[실패] 스카이데일리: 기사 ID 없음"
+            article_id = article_id_match.group(1)
+            
+            initial_response = requests.get(url, headers=headers, timeout=10, verify=False)
+            initial_response.raise_for_status()
+            initial_response.encoding = 'euc-kr'
+            initial_soup = BeautifulSoup(initial_response.text, 'lxml')
+            content_area = initial_soup.select_one("#news_body_area")
+            
+            api_url = f"https://www.skyedaily.com/news/news_body_view_bottom.php?ID={article_id}"
+            api_response = requests.get(api_url, timeout=10, verify=False, headers=headers)
+            api_response.raise_for_status()
+            api_response.encoding = 'euc-kr'
+            api_soup = BeautifulSoup(api_response.text, 'lxml')
+            
+            if content_area:
+                for tag in api_soup.contents:
+                    content_area.append(tag)
+                full_text = content_area.get_text(separator='\n', strip=True)
+            else:
+                full_text = api_soup.get_text(separator='\n', strip=True)
+            
+            return clean_bottom_boilerplate(full_text)
+        except Exception as e:
+            return f"[오류] 스카이데일리 API: {e}"
+
+    # --- 전략 2: 강력한 범용 HTML 파서 (API가 없는 모든 사이트 대상) ---
     try:
         response = requests.get(url, headers=headers, timeout=15, verify=False)
         response.raise_for_status()
-        if response.encoding.lower() in ['iso-8859-1', 'euc-kr']:
+
+        if response.encoding.lower() == 'iso-8859-1':
             response.encoding = response.apparent_encoding
+
         soup = BeautifulSoup(response.text, "lxml")
-        for tag in soup(['script', 'style', 'header', 'footer', 'nav', 'aside', 'iframe', 'figure']):
-            tag.decompose()
-        selectors = [
-            "#article-view-content-div", "#CmAdContent", "#articleBody", "#article-body", "#view_content_wrap",
-            "#article-content-body", "#news_body_area", "#article_content", "#news-contents", "#articleText",
-            "article", ".article_body", ".news_end"
+
+        # 1단계: 불필요한 HTML 태그 사전 제거
+        unwanted_tags = [
+            'script', 'style', 'iframe', 'header', 'footer', 'nav', 'aside',
+            '.ad', '.advertisement', '.banner', '.social-share', '.article_relation', 
+            '.news_footer', '.journalist_area', '.copyright', '.comment', '.reply'
         ]
+        for selector in unwanted_tags:
+            for tag in soup.select(selector):
+                tag.decompose()
+        
+        # 2단계: 알려진 선택자로 본문 영역 찾기 (신뢰도 높은 순서대로)
+        selectors = [
+            "#article-view-content-div", "#CmAdContent", "#articleBody", "#article-body",
+            "#view_content_wrap", "#article-content-body", "#news_body_area", 
+            "#article_content", "#news-contents", "#articleText",
+            ".article_view_content_DIV", ".article_body", ".news_end", ".view-content", ".article-content",
+            ".entry-content", ".td-post-content",
+            "article"
+        ]
+        
         content_area = next((soup.select_one(s) for s in selectors if soup.select_one(s)), None)
+        
         if content_area:
             text = content_area.get_text(separator='\n', strip=True)
-            if len(text) > 100:
-                lines = text.split('\n')
-                cleaned_lines = []
-                for line in lines:
-                    if any(marker in line for marker in ARTICLE_END_MARKERS):
-                        break
-                    cleaned_lines.append(line)
-                return '\n'.join(cleaned_lines).strip()
-        return "[실패] 본문 영역 추출 실패"
+            if len(text) > 150:
+                return clean_bottom_boilerplate(text)
+
+        # 3단계: 최후의 수단 (<p> 태그 조합)
+        paragraphs = soup.find_all('p')
+        if paragraphs:
+            full_text, word_count = [], 0
+            for p in paragraphs:
+                p_text = p.get_text(strip=True)
+                if len(p_text.split()) > 7: # 너무 짧은 문단은 제외
+                    full_text.append(p_text)
+                    word_count += len(p_text.split())
+            
+            if word_count > 100:
+                return clean_bottom_boilerplate("\n\n".join(full_text))
+
+        return "[실패] 모든 추출 방법 실패"
+
+    except requests.exceptions.RequestException as e:
+        return f"[오류] 네트워크: {e}"
     except Exception as e:
-        return f"[오류] {str(e)}"
+        return f"[오류] 일반 파싱: {e}"
 
 def analyze_articles_with_ai(articles):
     """기사 목록을 AI를 통해 분석하고 구조화된 데이터를 추가합니다."""
@@ -223,25 +338,17 @@ def aggregate_and_save_to_csv(new_articles, output_dir):
     if not new_articles:
         print("  - 취합할 새 데이터가 없습니다.")
         return
-
-    # 이 스크립트는 항상 최신 3일치 데이터를 가져오므로, 
-    # 기존 데이터를 읽어와 병합하는 대신 매번 새로 만드는 것이 더 간단하고 안정적입니다.
-    # (어차피 대시보드는 최신 데이터만 보여줄 것이므로)
     
-    # 1. DataFrame으로 변환
     df = pd.DataFrame(new_articles)
     
-    # 2. 오래된 데이터 제거 (예: 최근 30일치 데이터만 유지)
     thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     df['published_at'] = pd.to_datetime(df['published_at'], errors='coerce').dt.strftime('%Y-%m-%d')
     final_df = df[df['published_at'] >= thirty_days_ago].copy()
     
-    # 3. 리스트 형태의 컬럼을 CSV에 저장하기 좋게 문자열로 변환
     for col in ['analysis_orgs', 'analysis_keywords']:
         if col in final_df.columns:
             final_df[col] = final_df[col].apply(lambda x: str(x) if isinstance(x, list) else str(x))
 
-    # 4. CSV 파일로 저장
     os.makedirs(output_dir, exist_ok=True)
     csv_path = os.path.join(output_dir, "aggregated_stock_data.csv")
     final_df.to_csv(csv_path, index=False, encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
@@ -263,8 +370,6 @@ def main():
         print(f"❌ 초기화 중 오류 발생: {e}")
         sys.exit(1)
 
-    # 이 파이프라인은 매번 새로 데이터를 가져와 덮어쓰므로, 기존 URL 로드가 필요 없습니다.
-    # 단, 네이버 API 중복 방지를 위해 실행 시간 동안에는 URL을 기억합니다.
     temp_existing_urls = set()
     new_articles = crawl_naver_news(STOCK_SEARCH_KEYWORDS, temp_existing_urls)
     
@@ -274,15 +379,15 @@ def main():
         
     print("\n--- 2단계: 기사 본문 추출 시작 ---")
     for i, article in enumerate(new_articles):
+        # content가 이미 있는 경우는 건너뜁니다 (재실행 방지).
         if not article.get('content'):
             print(f"  - ({i+1}/{len(new_articles)}) 본문 추출 중: {article.get('url', '')[:70]}...")
             article['content'] = extract_article_content(article.get('url', ''))
-            time.sleep(0.1)
+            time.sleep(0.1) # 가벼운 딜레이
     print("--- ✅ 본문 추출 완료 ---")
 
     analyzed_articles = analyze_articles_with_ai(new_articles)
     
-    # 최종 결과물을 저장할 경로 설정
     output_dir = os.path.join("output", "aggregated")
     aggregate_and_save_to_csv(analyzed_articles, output_dir)
 
