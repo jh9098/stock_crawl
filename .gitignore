@@ -1,1 +1,21 @@
-.
+# .gitignore
+
+# 가상환경 폴더
+venv/
+.venv/
+
+# 파이썬 캐시 파일 및 폴더
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 생성된 데이터 및 결과물 폴더
+output/
+
+# API 키 및 비밀 정보가 담긴 환경변수 파일
+.env
+
+# VSCode, PyCharm 등 에디터 설정 파일
+.vscode/
+.idea/

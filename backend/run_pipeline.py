@@ -292,3 +292,32 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # (추가) 키워드 집계 및 추천
+    print("\n[추천 키워드 분석]")
+    try:
+        import ast
+        latest_path = os.path.join("output", "aggregated", "aggregated_stock_data.csv")
+        df = pd.read_csv(latest_path, encoding='utf-8')
+        df['published_at'] = pd.to_datetime(df['published_at'])
+        date_limit = pd.Timestamp.now() - pd.Timedelta(days=30)
+        df = df[df['published_at'] >= date_limit]
+        all_keywords = []
+        for x in df['analysis_keywords']:
+            try:
+                kws = ast.literal_eval(str(x))
+                all_keywords.extend([k for k in kws if isinstance(k, str)])
+            except Exception:
+                continue
+        import collections
+        keyword_counts = collections.Counter(all_keywords)
+        recommended_keywords = [
+            (kw, count)
+            for kw, count in keyword_counts.most_common(50)
+            if kw not in STOCK_SEARCH_KEYWORDS and len(kw) > 1
+        ][:20]
+        print("💡 최근 30일간 추천 검색 키워드:")
+        for kw, count in recommended_keywords:
+            print(f"- {kw} ({count}회)")
+    except Exception as e:
+        print(f"[키워드 추천 분석 오류] {e}")
