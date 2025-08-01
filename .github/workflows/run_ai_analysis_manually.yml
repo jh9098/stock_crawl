@@ -1,0 +1,50 @@
+**파일 경로:** `.github/workflows/run_ai_analysis_manually.yml`
+
+```yaml
+# .github/workflows/run_ai_analysis_manually.yml
+
+# 워크플로우의 이름 (Actions 탭에 표시됨)
+name: 임시 AI 분석 실행
+
+# 이 워크플로우는 수동으로만 실행되도록 설정
+on:
+  workflow_dispatch:
+
+jobs:
+  # 'run-ai-analysis' 라는 이름의 작업
+  run-ai-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1단계: 저장소의 모든 파일(crawled_data.csv 포함)을 가져옴
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2단계: 파이썬 3.10 설치
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # 3단계: 필요한 라이브러리 설치
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas google-generativeai
+
+      # 4단계: AI 분석 전용 스크립트 실행
+      - name: Run AI Analysis Only Script
+        env:
+          # AI 분석에 필요한 Google API 키만 주입
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          # 새로 만든 run_ai_only.py 스크립트를 실행
+          python backend/run_ai_only.py
+
+      # 5단계: 최종 분석된 결과물(CSV)을 아티팩트로 업로드
+      - name: Upload Final Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aggregated-stock-data-from-ai-only
+          path: backend/output/aggregated/aggregated_stock_data.csv
+          retention-days: 5```
