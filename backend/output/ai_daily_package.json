@@ -1,0 +1,136 @@
+{
+  "date": "2025-08-01",
+  "trending_keywords": [
+    "삼성전자",
+    "코스피",
+    "반도체",
+    "FOMC",
+    "밸류업",
+    "한미 관세 협상",
+    "연준",
+    "2차전지",
+    "2분기 실적",
+    "코스닥"
+  ],
+  "trending_stocks": [
+    "삼성전자",
+    "SK하이닉스",
+    "테슬라",
+    "연준",
+    "FOMC",
+    "미국",
+    "현대차",
+    "LG에너지솔루션",
+    "엔비디아",
+    "한화오션"
+  ],
+  "sentiment_ratio": {
+    "Neutral": 0.4,
+    "Positive": 0.39,
+    "Negative": 0.21
+  },
+  "top_articles": [
+    {
+      "title": "한동훈 &quot;증시 폭락하는데 세금 올리겠다니…청년·소액투자자 두 번 울...",
+      "summary_ai": "증권거래세를 통행세에 비유하며, 투자 경험 없는 사람이 세금 정책을 주도하는 것에 대한 우려를 표명하고 있습니다.",
+      "url": "http://www.joongang.tv/news/articleView.html?idxno=156586",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "솔루엠 목표주가와 괴리 확대, 투자심리 위축",
+      "summary_ai": "8월 1일 오전 11시 48분 기준, 코스피 상장사 솔루엠 주가가 전일 대비 3.57% 하락한 15,940원에 거래되고 있습니다. 장 초반에는 16,510원에 출발했으나 장중 15,820원까지 하락 후 소폭 반등했습니다.",
+      "url": "https://www.stardailynews.co.kr/news/articleView.html?idxno=496351",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "코스피 장중 3,150대 후퇴…코스닥 3% 급락, 외국인·기관 대규모 매도",
+      "summary_ai": "외국인과 기관의 매도세 지속으로 코스피가 장중 3% 가까이 하락하고 코스닥도 3% 넘게 급락했습니다.  삼성전자, SK하이닉스 등 대형주와 바이오, 2차전지주가 하락세를 보였으며, 투자심리 위축으로 시장 전반에 약세가 나타났습니다.",
+      "url": "https://www.topstarnews.net/news/articleView.html?idxno=15754787",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "'세제개편안' 아쉬웠나… 금융·증권·고배당ETF 주가 일제히 약세",
+      "summary_ai": "오전 11시 기준 코스피 지수가 전일 대비 2.91% 하락한 3150.92를 기록하고 있으며, 장중 100포인트 넘게 하락하기도 했습니다. KB금융과 신한지주 등 금융주도 하락세를 보였습니다.",
+      "url": "https://www.ddaily.co.kr/page/view/2025080111384927101",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "[위클리오늘] 李정부, 주식시장 '증세'로 개인투자자 뒤통수…장중 코스...",
+      "summary_ai": "이재명 정부의 증세 추진으로 코스피 지수가 장중 3% 넘게 급락했습니다.  주식시장에 대한 증세가 증시 부양과 역행하는 모습을 보이고 있습니다.",
+      "url": "http://www.weeklytoday.com/news/articleView.html?idxno=714367",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "“국장? 바보나 한다”.. 대주주 10억 회귀에 청원 2만 돌파, 개미 탈출...",
+      "summary_ai": "투자자들은 국내 증시에 대한 부정적인 전망을 내놓고 있으며, 연말 증시 회피 매도와 코스피 2000대 진입 가능성을 우려하고 있습니다. 코스피 2000선 하락 시 대주주 범위 확대로 인한 추가적인 시장 약세가 예상됩니다.",
+      "url": "https://www.jibs.co.kr/news/articles/articlesDetail/50105?feed=na",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "증권거래세 원상복귀, 코스피 부흥과 배치… “투자 위축 불보듯”",
+      "summary_ai": "정부의 증권거래세율 인상 및 대주주 기준 강화 결정에 개미와 기관 투자자들의 거센 반발이 일고 있습니다.  민주당 내부에서도 코스피 5000 목표에 역행하는 조치라는 비판이 제기되고 있으며, 향후 5년간 11조 5000억원의 세수 효과가 예상됩니다.",
+      "url": "https://www.munhwa.com/article/11523129?ref=naver",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "민주, 증시 개미들 반발 산 '세제개편안' 조세특위서 손볼까",
+      "summary_ai": "더불어민주당 내에서 정부의 주식 관련 세제 개편안이 코스피 5000 목표 달성에 역행한다는 비판이 제기되고 있습니다.  10억원 이상 주식 보유자에 대한 대주주 과세 강화에 대한 우려가 표명되고 있습니다.",
+      "url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4367857",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "관세협상·세제개편 실망…코스피 3,200선 붕괴",
+      "summary_ai": "코스피 지수가 개장 후 하락세를 보이며 3200선 아래로 내려갔다. 하나은행 본점 딜링룸에서 직원들이 업무를 보고 있는 사진과 함께 코스피 하락 소식을 전하고 있다.",
+      "url": "https://www.yeongnam.com/web/view.php?key=20250801021426880",
+      "sentiment_label": "Negative"
+    },
+    {
+      "title": "[시황] 코스피, 외인·기관 '팔자세'에 장중 3200선 붕괴",
+      "summary_ai": "코스피 지수가 외국인과 기관의 매도세로 하락 출발하여 장중 3200선을 내주었다. 전 거래일 대비 0.28% 하락한 3245.44로 마감했다.",
+      "url": "https://www.pointdaily.co.kr/news/articleView.html?idxno=261771",
+      "sentiment_label": "Negative"
+    }
+  ],
+  "sector_briefs": [
+    {
+      "keyword": "삼성전자",
+      "mentions": 158
+    },
+    {
+      "keyword": "코스피",
+      "mentions": 155
+    },
+    {
+      "keyword": "반도체",
+      "mentions": 130
+    },
+    {
+      "keyword": "밸류업",
+      "mentions": 100
+    },
+    {
+      "keyword": "FOMC",
+      "mentions": 95
+    },
+    {
+      "keyword": "한미 관세 협상",
+      "mentions": 92
+    },
+    {
+      "keyword": "연준",
+      "mentions": 91
+    },
+    {
+      "keyword": "2차전지",
+      "mentions": 86
+    },
+    {
+      "keyword": "금리 인상",
+      "mentions": 83
+    },
+    {
+      "keyword": "2분기 실적",
+      "mentions": 81
+    }
+  ]
+}

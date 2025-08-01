@@ -10,8 +10,6 @@ __pycache__/
 *.pyo
 *.pyd
 
-# 생성된 데이터 및 결과물 폴더
-output/
 
 # API 키 및 비밀 정보가 담긴 환경변수 파일
 .env

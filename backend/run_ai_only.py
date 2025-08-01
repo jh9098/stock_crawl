@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 # 설정 영역 (일부만 필요)
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 
 gemini_model = None
 

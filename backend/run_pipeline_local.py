@@ -44,8 +44,8 @@ NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
 # --- 데이터 수집 기간 및 개수 설정 ---
-DATA_COLLECTION_DAYS = 14      # 수집할 기간 (일)
-ARTICLES_PER_DAY_LIMIT = 30    # 키워드당 하루에 수집할 최대 기사 수
+DATA_COLLECTION_DAYS = 1      # 수집할 기간 (일)
+ARTICLES_PER_DAY_LIMIT = 100    # 키워드당 하루에 수집할 최대 기사 수
 
 # --- 검색 키워드 목록 ---
 STOCK_SEARCH_KEYWORDS = [
@@ -54,7 +54,7 @@ STOCK_SEARCH_KEYWORDS = [
 ]
 # --- 기타 설정 ---
 RATE_LIMIT_DELAY = 1
-BATCH_SIZE = 10
+BATCH_SIZE = 7
 ARTICLE_END_MARKERS = [
     "무단전재", "무단 전재", "재배포 금지", "저작권자", "광고문의", 
     "광고 문의", "AD링크", "타불라", "관련기사", "기자소개", "기자 소개",
