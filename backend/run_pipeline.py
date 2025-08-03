@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import re
 import warnings
 import urllib3
+import csv
 
 # --- 필수 라이브러리 임포트 ---
 import requests
