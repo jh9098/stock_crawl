@@ -44,7 +44,7 @@ NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 
 # --- 데이터 수집 기간 및 개수 설정 ---
-DATA_COLLECTION_DAYS = 1      # 수집할 기간 (일)
+DATA_COLLECTION_DAYS = 4      # 수집할 기간 (일)
 ARTICLES_PER_DAY_LIMIT = 100    # 키워드당 하루에 수집할 최대 기사 수
 
 # --- 검색 키워드 목록 ---
