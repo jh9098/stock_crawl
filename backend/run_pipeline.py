@@ -117,7 +117,7 @@ def crawl_naver_news(keywords, existing_urls):
     print(f"\n--- 1단계: 네이버 뉴스 수집 시작 (대상 날짜: {date_str}) ---")
     for keyword in keywords:
         print(f" 🔎 키워드 '{keyword}' 수집 중...")
-        params = {"query": keyword, "display": 100, "start": 1, "sort": "date"}
+        params = {"query": keyword, "display": 1, "start": 1, "sort": "date"}
         try:
             response = requests.get(api_url, headers=headers, params=params, verify=False, timeout=10)
             response.raise_for_status()
