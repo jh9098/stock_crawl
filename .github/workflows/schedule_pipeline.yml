@@ -1,13 +1,12 @@
 # .github/workflows/schedule_pipeline.yml
-
+---
 # 워크플로우의 이름
 name: Run Daily News Pipeline
 
 # 이 워크플로우가 언제 실행될지를 정의
-on:
+'on':
   # 1. GitHub Actions 탭에서 수동으로 실행할 수 있도록 설정
   workflow_dispatch:
-  
   # 2. 스케줄에 따라 자동 실행 설정
   schedule:
     # 매일 22:00 UTC (한국 시간 오전 7시)에 실행
@@ -20,7 +19,7 @@ jobs:
   run-pipeline:
     # 이 작업이 실행될 가상 환경을 지정 (최신 우분투)
     runs-on: ubuntu-latest
-    
+
     # 작업의 단계(Step)들을 순서대로 정의
     steps:
       # 1단계: GitHub 저장소의 코드를 가상 환경으로 가져옴 (Checkout)
@@ -59,7 +58,9 @@ jobs:
           name: aggregated-stock-data
           # 업로드할 파일의 경로
           # run_pipeline.py 스크립트가 생성하는 CSV 파일의 위치와 일치해야 함
-          path: backend/output/aggregated/aggregated_stock_data.csv
+          # (run_pipeline.py writes to the repository root's output
+          #  aggregated directory)
+          path: output/aggregated/aggregated_stock_data.csv
           # 결과물을 보관할 기간 (일 단위)
           # 너무 길게 설정하면 저장 공간을 많이 차지하므로 적절히 조절
           retention-days: 5
